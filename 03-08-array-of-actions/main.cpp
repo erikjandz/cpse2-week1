@@ -3,61 +3,29 @@
 #include <SFML/Graphics.hpp>
 #include "ball.hpp"
 #include "wall.hpp"
-
-class action {
-private:
-	std::function< bool() > condition;
-	std::function< void() > work;
-public:
-	action(
-	   std::function< bool() > condition,
-	   std::function< void() > work
-	) : condition( condition ),
-		work( work )
-	{}
-
-	action(
-		sf::Keyboard::Key key,
-		std::function< void() > work
-	) :
-		condition(
-			[ key ]()->bool { return sf::Keyboard::isKeyPressed( key ); }
-		),
-		work(work)
-	{}
-
-	action(
-		sf::Mouse::Button button,
-		std::function< void() > work
-	) :
-		condition(
-			[ button ]()->bool { return sf::Mouse::isButtonPressed( button ); }
-		),
-		work(work)
-	{}
-
-	void operator()(){
-		if( condition() ){
-			work();
-		}
-	}
-};
+#include "action.hpp"
+#include <vector>
 
 int main( int argc, char *argv[] ){
 	std::cout << "Starting application 01-05 array of actions\n";
 
 	sf::RenderWindow window{ sf::VideoMode{ 640, 480 }, "SFML window" };
 	ball my_ball{ sf::Vector2f{ 320.0, 240.0 } };
-	wall my_wall{ sf::Vector2f{ 160.0, 180.0 } };
+	wall wall1{ sf::Vector2f{ 0, 0 } , sf::Vector2f{ 30, 480 }};
+	wall wall2{ sf::Vector2f{ 0, 0 } , sf::Vector2f{ 640, 30 }};
+	wall wall3{ sf::Vector2f{ 610, 0 } , sf::Vector2f{ 30, 480 }};
+	wall wall4{ sf::Vector2f{ 0, 450 } , sf::Vector2f{ 640, 30 }};
+	wall block{ sf::Vector2f{ 320.0, 120.0 } , sf::Vector2f{160, 30.0 }, sf::Color(0, 0, 255)};
 
+	std::vector<drawable *> drawables = {&wall1, &wall2, &wall3, &wall4, &my_ball, &block};
 
 	action actions[] = {
-		action( sf::Keyboard::Left,  [&](){ my_ball.move( sf::Vector2f( -1.0,  0.0 )); }),
-		action( sf::Keyboard::Right, [&](){ my_ball.move( sf::Vector2f( +1.0,  0.0 )); }),
-		action( sf::Keyboard::Up,    [&](){ my_ball.move( sf::Vector2f(  0.0, -1.0 )); }),
-		action( sf::Keyboard::Down,  [&](){ my_ball.move( sf::Vector2f(  0.0, +1.0 )); }),
-		action( sf::Mouse::Left,     [&](){ my_ball.jump( sf::Mouse::getPosition( window )); })
-	};
+		action( sf::Keyboard::Left,  [&](){ block.move( sf::Vector2f( -1.0,  0.0 )); }),
+		action( sf::Keyboard::Right, [&](){ block.move( sf::Vector2f( +1.0,  0.0 )); }),
+		action( sf::Keyboard::Up,    [&](){ block.move( sf::Vector2f(  0.0, -1.0 )); }),
+		action( sf::Keyboard::Down,  [&](){ block.move( sf::Vector2f(  0.0, +1.0 )); }),
+		action( sf::Mouse::Left,     [&](){ block.jump( sf::Mouse::getPosition( window )); }),
+		action( [](){ return true; }, [&](){ my_ball.move( sf::Vector2f(  +1.0, +1.0 )); })	};
 
 	while (window.isOpen()) {
 		for( auto & action : actions ){
@@ -65,13 +33,14 @@ int main( int argc, char *argv[] ){
 		}
 
 		window.clear();
-		my_ball.draw( window );
-		my_wall.draw( window );
+		for(auto object : drawables){
+				object->draw(window);
+		}
 		window.display();
 
 		sf::sleep( sf::milliseconds( 20 ));
 
-        sf::Event event;
+    sf::Event event;
 	    while( window.pollEvent(event) ){
 			if( event.type == sf::Event::Closed ){
 				window.close();
